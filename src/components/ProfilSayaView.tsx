@@ -25,7 +25,11 @@ interface ProfilSayaViewProps {
   fallbackPhotoUrl?: string | null;
   completedCount?: number;
   onUpdatePhoto?: (photoDataUrl: string | null) => Promise<void>;
-  onUpdateProfileDetails?: (position: string, unit: string) => Promise<void>;
+  onUpdateProfileDetails?: (
+    displayName: string,
+    position: string,
+    unit: string
+  ) => Promise<void>;
   onOpenCvModal?: () => void;
 }
 
@@ -95,7 +99,11 @@ export const ProfilSayaView: React.FC<ProfilSayaViewProps> = ({
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
+  const resolvedCurrentName =
+    profile.displayName?.trim() || (userName && userName !== 'Aparatur' ? userName : '');
+
   const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editName, setEditName] = useState(resolvedCurrentName);
   const [editPosition, setEditPosition] = useState(profile.position);
   const [editUnit, setEditUnit] = useState(profile.unit);
   const [detailsBusy, setDetailsBusy] = useState(false);
@@ -103,14 +111,15 @@ export const ProfilSayaView: React.FC<ProfilSayaViewProps> = ({
 
   useEffect(() => {
     if (!isEditingDetails) {
+      setEditName(resolvedCurrentName);
       setEditPosition(profile.position);
       setEditUnit(profile.unit);
     }
-  }, [profile.position, profile.unit, isEditingDetails]);
+  }, [resolvedCurrentName, profile.position, profile.unit, isEditingDetails]);
 
   const activePhoto = profile.photoDataUrl || fallbackPhotoUrl || null;
   const hasCustomPhoto = Boolean(profile.photoDataUrl);
-  const displayTitle = userName && userName !== 'Aparatur' ? userName : profile.nameLabel;
+  const displayTitle = resolvedCurrentName || profile.nameLabel;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -143,6 +152,7 @@ export const ProfilSayaView: React.FC<ProfilSayaViewProps> = ({
   };
 
   const handleStartEditDetails = () => {
+    setEditName(resolvedCurrentName);
     setEditPosition(profile.position);
     setEditUnit(profile.unit);
     setDetailsError(null);
@@ -150,6 +160,7 @@ export const ProfilSayaView: React.FC<ProfilSayaViewProps> = ({
   };
 
   const handleCancelEditDetails = () => {
+    setEditName(resolvedCurrentName);
     setEditPosition(profile.position);
     setEditUnit(profile.unit);
     setDetailsError(null);
@@ -160,18 +171,19 @@ export const ProfilSayaView: React.FC<ProfilSayaViewProps> = ({
     e.preventDefault();
     if (!onUpdateProfileDetails) return;
 
+    const trimmedName = editName.trim();
     const trimmedPosition = editPosition.trim();
     const trimmedUnit = editUnit.trim();
 
-    if (!trimmedPosition || !trimmedUnit) {
-      setDetailsError('Jabatan dan Satuan Kerja wajib diisi.');
+    if (!trimmedName || !trimmedPosition || !trimmedUnit) {
+      setDetailsError('Nama, Jabatan, dan Satuan Kerja wajib diisi.');
       return;
     }
 
     setDetailsError(null);
     setDetailsBusy(true);
     try {
-      await onUpdateProfileDetails(trimmedPosition, trimmedUnit);
+      await onUpdateProfileDetails(trimmedName, trimmedPosition, trimmedUnit);
       setIsEditingDetails(false);
     } catch {
       setDetailsError('Gagal menyimpan perubahan ke Cloud Firestore.');
@@ -241,6 +253,24 @@ export const ProfilSayaView: React.FC<ProfilSayaViewProps> = ({
             {isEditingDetails ? (
               <form onSubmit={handleSaveDetails} className="mt-3 space-y-3 max-w-xl">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="edit-profile-name"
+                      className="block text-xs font-semibold text-[#123B68] dark:text-[#F1F5F9] mb-1"
+                    >
+                      Nama
+                    </label>
+                    <input
+                      id="edit-profile-name"
+                      type="text"
+                      maxLength={160}
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Nama lengkap aparatur"
+                      className="w-full h-10 px-3.5 rounded-xl glass-input text-sm text-[#123B68] dark:text-[#F1F5F9]"
+                      required
+                    />
+                  </div>
                   <div>
                     <label
                       htmlFor="edit-profile-position"
@@ -355,7 +385,7 @@ export const ProfilSayaView: React.FC<ProfilSayaViewProps> = ({
                   className="min-h-[44px] h-11 px-3.5 rounded-xl glass-surface text-xs font-semibold text-[#123B68] dark:text-[#F1F5F9] hover:border-[#3478C7]/45 inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5 text-[#3478C7] dark:text-[#60A5FA]" />
-                  <span>Edit Jabatan & Satuan Kerja</span>
+                  <span>Edit Profil</span>
                 </button>
               )}
             </div>

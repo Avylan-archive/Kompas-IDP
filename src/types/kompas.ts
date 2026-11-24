@@ -53,6 +53,7 @@ export interface CompetencyPillar {
 }
 
 export interface SampleProfile {
+  displayName?: string | null;
   nameLabel: string;
   roleLabel: string;
   position: string;

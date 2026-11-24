@@ -412,7 +412,9 @@ export async function subscribeUserProfileAndForm(
       await batch.commit();
     } else {
       const data = userSnap.data();
-      const nextDisplay = user.displayName || '';
+      const hasStoredDisplayName =
+        typeof data.displayName === 'string' && data.displayName.trim().length > 0;
+      const nextDisplay = hasStoredDisplayName ? data.displayName : user.displayName || '';
       const nextEmail = user.email || '';
       if (data.displayName !== nextDisplay || data.email !== nextEmail) {
         await updateDoc(userRef, {
@@ -437,6 +439,7 @@ export async function subscribeUserProfileAndForm(
       if (!snapshot.exists()) return;
       const data = snapshot.data();
       const profile: SampleProfile = {
+        displayName: typeof data.displayName === 'string' ? data.displayName : null,
         nameLabel: typeof data.nameLabel === 'string' ? data.nameLabel : SAMPLE_PROFILE.nameLabel,
         roleLabel: typeof data.roleLabel === 'string' ? data.roleLabel : SAMPLE_PROFILE.roleLabel,
         position: typeof data.position === 'string' ? data.position : SAMPLE_PROFILE.position,
@@ -585,14 +588,16 @@ export async function updateUserPhotoInFirestore(
   }
 }
 
-export async function updateUserPositionAndUnitInFirestore(
+export async function updateUserProfileDetailsInFirestore(
   uid: string,
+  displayName: string,
   position: string,
   unit: string
 ): Promise<void> {
   const path = `${USERS_COLLECTION}/${uid}`;
   try {
     await updateDoc(doc(db, USERS_COLLECTION, uid), {
+      displayName,
       position,
       unit,
       updatedAt: serverTimestamp(),

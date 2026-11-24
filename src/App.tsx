@@ -38,7 +38,7 @@ import {
   subscribeUserProfileAndForm,
   toggleIdpItemCompletionInFirestore,
   updateUserPhotoInFirestore,
-  updateUserPositionAndUnitInFirestore,
+  updateUserProfileDetailsInFirestore,
 } from './lib/firestoreService';
 import {
   EmployeeSummary,
@@ -403,13 +403,13 @@ export default function App() {
   );
 
   const handleUpdateProfileDetails = useCallback(
-    async (position: string, unit: string) => {
+    async (displayName: string, position: string, unit: string) => {
       if (!user) return;
       try {
-        await updateUserPositionAndUnitInFirestore(user.uid, position, unit);
+        await updateUserProfileDetailsInFirestore(user.uid, displayName, position, unit);
         showToast(
           'Profil aparatur diperbarui',
-          `${position} · ${unit} disimpan ke Cloud Firestore.`,
+          `${displayName} · ${position} · ${unit} disimpan ke Cloud Firestore.`,
           'success'
         );
       } catch (err) {
@@ -444,7 +444,11 @@ export default function App() {
         await addCatalogTrainingToFirestore({
           ...training,
           createdByUid: user.uid,
-          createdByName: user.displayName || user.email || userProfile.nameLabel,
+          createdByName:
+            userProfile.displayName?.trim() ||
+            user.displayName ||
+            user.email ||
+            userProfile.nameLabel,
         });
         showToast(
           training.approvalStatus === 'Disetujui'
@@ -513,7 +517,11 @@ export default function App() {
   const handleAssignTrainingsToEmployees = useCallback(
     async (trainings: TrainingProgram[], employeeUids: string[]) => {
       if (!user || !isAdmin) return 0;
-      const adminName = user.displayName || user.email || userProfile.nameLabel;
+      const adminName =
+        userProfile.displayName?.trim() ||
+        user.displayName ||
+        user.email ||
+        userProfile.nameLabel;
       try {
         const total = await assignTrainingsToEmployeesInFirestore(
           user,
@@ -536,7 +544,7 @@ export default function App() {
         throw err;
       }
     },
-    [user, isAdmin, userProfile.nameLabel, showToast]
+    [user, isAdmin, userProfile.displayName, userProfile.nameLabel, showToast]
   );
 
   const handleSubmitCatalogToAdmin = useCallback(
@@ -677,7 +685,8 @@ export default function App() {
     );
   }
 
-  const googleUserName = user.displayName || user.email || 'Aparatur';
+  const googleUserName =
+    userProfile.displayName?.trim() || user.displayName || user.email || 'Aparatur';
 
   return (
     <div className="min-h-screen flex flex-col">
