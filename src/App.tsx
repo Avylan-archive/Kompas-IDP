@@ -8,7 +8,7 @@ import { CompletedTrainingEntry, CvGeneratorModal } from './components/CvGenerat
 import { IdpSayaView } from './components/IdpSayaView';
 import { KatalogView } from './components/KatalogView';
 import { KompasLogo } from './components/KompasLogo';
-import { LoginPreviewView } from './components/LoginPreviewView';
+import { LandingPageView } from './components/LandingPageView';
 import { ProfilSayaView } from './components/ProfilSayaView';
 import { PrototypeBanner } from './components/PrototypeBanner';
 import { RekomendasiView } from './components/RekomendasiView';
@@ -659,10 +659,10 @@ export default function App() {
     );
   }
 
-  // Wajib login terlebih dahulu sebelum mengakses portal
+  // Tampilkan landing page sebelum login; tombol Masuk memicu pop-up Google Sign-In langsung di halaman ini
   if (!user) {
     return (
-      <LoginPreviewView
+      <LandingPageView
         theme={theme}
         onToggleTheme={toggleTheme}
         showPrototypeBanner={!bannerDismissed}
