@@ -1,0 +1,6 @@
+{
+  "name": "KOMPAS — Kompetensi dan Pengembangan Aparatur Sipil Negara",
+  "description": "Temukan arah, kembangkan potensi. Aplikasi perencanaan pengembangan kompetensi dan Individual Development Plan (IDP) aparatur.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,176 @@
+{
+  "entities": {
+    "TrainingProgram": {
+      "title": "TrainingProgram",
+      "description": "Data katalog pelatihan dan sertifikasi aparatur sipil negara yang dibagikan untuk seluruh pengguna.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "code": { "type": "string", "maxLength": 20 },
+        "title": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["Pelatihan", "Sertifikasi"] },
+        "category": { "type": "string", "maxLength": 100 },
+        "targetRole": { "type": "string", "maxLength": 160 },
+        "targetRoles": { "type": "array", "description": "Daftar jabatan sasaran" },
+        "durationJp": { "type": "number" },
+        "method": { "type": "string", "enum": ["Daring", "Luring"] },
+        "level": { "type": "string", "enum": ["Dasar", "Menengah", "Lanjut"] },
+        "provider": { "type": "string", "maxLength": 200 },
+        "matchPercentage": { "type": "number" },
+        "matchLevel": {
+          "type": "string",
+          "enum": ["Sangat Sesuai", "Sesuai", "Direkomendasikan", "Penunjang"]
+        },
+        "summary": { "type": "string", "maxLength": 1000 },
+        "recommendationReason": { "type": "string", "maxLength": 500 },
+        "syllabus": { "type": "array", "description": "Daftar materi pokok" },
+        "scheduleEstimate": { "type": "string", "maxLength": 100 },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdByName": { "type": "string", "maxLength": 160 },
+        "approvalStatus": {
+          "type": "string",
+          "enum": ["Belum Diajukan", "Menunggu Persetujuan Admin", "Disetujui"]
+        },
+        "adminNote": { "type": "string", "maxLength": 500 },
+        "submittedToAdminAt": { "type": "string", "maxLength": 40 },
+        "catalogInstanceId": { "type": "string", "maxLength": 64 }
+      },
+      "required": [
+        "id",
+        "code",
+        "title",
+        "type",
+        "category",
+        "targetRole",
+        "targetRoles",
+        "durationJp",
+        "method",
+        "level",
+        "provider",
+        "matchPercentage",
+        "matchLevel",
+        "summary",
+        "recommendationReason",
+        "syllabus",
+        "scheduleEstimate"
+      ]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Profil aparatur dan parameter draf IDP milik pengguna terautentikasi.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 160 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "photoDataUrl": {
+          "type": "string",
+          "maxLength": 180000,
+          "description": "Data URL foto profil terkompresi"
+        },
+        "nameLabel": { "type": "string", "maxLength": 160 },
+        "roleLabel": { "type": "string", "maxLength": 160 },
+        "position": { "type": "string", "maxLength": 160 },
+        "unit": { "type": "string", "maxLength": 200 },
+        "period": { "type": "string", "maxLength": 80 },
+        "annualTargetJp": { "type": "number" },
+        "currentJp": { "type": "number" },
+        "ownedCompetencies": { "type": "array" },
+        "developmentNeeds": { "type": "array" },
+        "idpForm": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "uid",
+        "nameLabel",
+        "roleLabel",
+        "position",
+        "unit",
+        "period",
+        "annualTargetJp",
+        "currentJp",
+        "ownedCompetencies",
+        "developmentNeeds",
+        "idpForm"
+      ]
+    },
+    "IdpItem": {
+      "title": "IdpItem",
+      "description": "Item pelatihan pilihan dalam draf IDP pengguna.",
+      "type": "object",
+      "properties": {
+        "trainingId": { "type": "string", "maxLength": 64 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 20 },
+        "title": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["Pelatihan", "Sertifikasi"] },
+        "category": { "type": "string", "maxLength": 100 },
+        "method": { "type": "string", "enum": ["Daring", "Luring"] },
+        "durationJp": { "type": "number" },
+        "level": { "type": "string", "enum": ["Dasar", "Menengah", "Lanjut"] },
+        "targetRole": { "type": "string", "maxLength": 160 },
+        "scheduleEstimate": { "type": "string", "maxLength": 100 },
+        "completed": { "type": "boolean" },
+        "completedAt": { "type": "string", "maxLength": 40 },
+        "catalogInstanceId": { "type": "string", "maxLength": 64 },
+        "assignedByAdmin": { "type": "boolean" },
+        "assignedByUid": { "type": "string", "maxLength": 128 },
+        "assignedByName": { "type": "string", "maxLength": 160 },
+        "assignedAt": { "type": "string", "maxLength": 40 },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "trainingId",
+        "uid",
+        "code",
+        "title",
+        "type",
+        "category",
+        "method",
+        "durationJp",
+        "level",
+        "targetRole",
+        "scheduleEstimate"
+      ]
+    },
+    "AdminAccount": {
+      "title": "AdminAccount",
+      "description": "Daftar UID akun dengan hak akses role Admin KOMPAS.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "name": { "type": "string", "maxLength": 160 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminAccount" },
+      "description": "Daftar pengelola dengan role Admin untuk mengelola katalog dan menugaskan pelatihan ke pegawai."
+    },
+    "/katalog_pelatihan/{trainingId}": {
+      "schema": { "$ref": "#/entities/TrainingProgram" },
+      "description": "Koleksi global katalog pelatihan yang sama untuk seluruh pengguna."
+    },
+    "/katalog_pelatihan/{trainingId}/peserta/{participantUid}": {
+      "schema": "object",
+      "description": "Daftar UID peserta yang memasukkan pelatihan ke Draf IDP agar dapat dibersihkan saat pelatihan dihapus."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Dokumen profil pengguna dan pengaturan draf IDP per UID."
+    },
+    "/users/{userId}/idp_items/{itemId}": {
+      "schema": { "$ref": "#/entities/IdpItem" },
+      "description": "Sub-koleksi daftar pelatihan pilihan pada draf IDP per pengguna."
+    },
+    "/idp/{idpId}": {
+      "schema": { "$ref": "#/entities/IdpItem" },
+      "description": "Koleksi IDP dengan kepemilikan per pengguna (uid)."
+    }
+  }
+}

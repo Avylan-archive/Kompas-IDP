@@ -1,0 +1,259 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isBootstrapAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == 'akundigitals28@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isBootstrapAdmin() ||
+        (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isAhliUtama() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.position is string &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.position.lower().matches('.*ahli utama.*');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTraining(data) {
+      return data.keys().hasAll([
+        'id', 'code', 'title', 'type', 'category', 'targetRole', 'targetRoles',
+        'durationJp', 'method', 'level', 'provider', 'matchPercentage',
+        'matchLevel', 'summary', 'recommendationReason', 'syllabus', 'scheduleEstimate'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'code', 'title', 'type', 'category', 'targetRole', 'targetRoles',
+        'durationJp', 'method', 'level', 'provider', 'matchPercentage',
+        'matchLevel', 'summary', 'recommendationReason', 'syllabus', 'scheduleEstimate',
+        'createdByUid', 'createdByName', 'approvalStatus', 'adminNote', 'submittedToAdminAt', 'catalogInstanceId'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 &&
+      data.code is string && data.code.size() >= 1 && data.code.size() <= 20 &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+      data.type in ['Pelatihan', 'Sertifikasi'] &&
+      data.category is string && data.category.size() >= 1 && data.category.size() <= 100 &&
+      data.targetRole is string && data.targetRole.size() >= 1 && data.targetRole.size() <= 160 &&
+      data.targetRoles is list && data.targetRoles.size() > 0 && data.targetRoles.size() <= 10 && data.targetRoles[0] is string &&
+      data.durationJp is number && data.durationJp > 0 && data.durationJp <= 500 &&
+      data.method in ['Daring', 'Luring'] &&
+      data.level in ['Dasar', 'Menengah', 'Lanjut'] &&
+      data.provider is string && data.provider.size() >= 1 && data.provider.size() <= 200 &&
+      data.matchPercentage is number && data.matchPercentage >= 0 && data.matchPercentage <= 100 &&
+      data.matchLevel in ['Sangat Sesuai', 'Sesuai', 'Direkomendasikan', 'Penunjang'] &&
+      data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 1000 &&
+      data.recommendationReason is string && data.recommendationReason.size() <= 500 &&
+      data.syllabus is list && data.syllabus.size() > 0 && data.syllabus.size() <= 20 && data.syllabus[0] is string &&
+      data.scheduleEstimate is string && data.scheduleEstimate.size() <= 100 &&
+      (!('createdByUid' in data) || (data.createdByUid is string && data.createdByUid.size() >= 1 && data.createdByUid.size() <= 128)) &&
+      (!('createdByName' in data) || (data.createdByName is string && data.createdByName.size() <= 160)) &&
+      (!('approvalStatus' in data) || data.approvalStatus in ['Belum Diajukan', 'Menunggu Persetujuan Admin', 'Disetujui']) &&
+      (!('adminNote' in data) || (data.adminNote is string && data.adminNote.size() <= 500)) &&
+      (!('submittedToAdminAt' in data) || data.submittedToAdminAt == null || (data.submittedToAdminAt is string && data.submittedToAdminAt.size() <= 40)) &&
+      (!('catalogInstanceId' in data) || data.catalogInstanceId == null || (data.catalogInstanceId is string && data.catalogInstanceId.size() <= 64));
+    }
+
+    function isValidIdpForm(form) {
+      return form is map &&
+        form.keys().hasAll(['targetCompetency', 'estimatedTimeline', 'focusArea', 'actionNotes', 'lastSavedAt']) &&
+        form.keys().hasOnly(['targetCompetency', 'estimatedTimeline', 'focusArea', 'actionNotes', 'lastSavedAt']) &&
+        form.targetCompetency is string && form.targetCompetency.size() <= 100 &&
+        form.estimatedTimeline is string && form.estimatedTimeline.size() <= 100 &&
+        form.focusArea is string && form.focusArea.size() <= 1000 &&
+        form.actionNotes is string && form.actionNotes.size() <= 1000 &&
+        (form.lastSavedAt == null || (form.lastSavedAt is string && form.lastSavedAt.size() <= 40));
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+        'uid', 'nameLabel', 'roleLabel', 'position', 'unit', 'period',
+        'annualTargetJp', 'currentJp', 'ownedCompetencies', 'developmentNeeds', 'idpForm'
+      ]) &&
+      data.keys().hasOnly([
+        'uid', 'displayName', 'email', 'photoDataUrl', 'nameLabel', 'roleLabel', 'position', 'unit', 'period',
+        'annualTargetJp', 'currentJp', 'ownedCompetencies', 'developmentNeeds', 'idpForm',
+        'createdAt', 'updatedAt'
+      ]) &&
+      data.uid == userId &&
+      (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 160)) &&
+      (!('email' in data) || (data.email is string && data.email.size() <= 200)) &&
+      (!('photoDataUrl' in data) || data.photoDataUrl == null || (data.photoDataUrl is string && data.photoDataUrl.size() <= 180000)) &&
+      data.nameLabel is string && data.nameLabel.size() <= 160 &&
+      data.roleLabel is string && data.roleLabel.size() <= 160 &&
+      data.position is string && data.position.size() >= 1 && data.position.size() <= 160 &&
+      data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 200 &&
+      data.period is string && data.period.size() <= 80 &&
+      data.annualTargetJp is number && data.annualTargetJp > 0 && data.annualTargetJp <= 500 &&
+      data.currentJp is number && data.currentJp >= 0 && data.currentJp <= 500 &&
+      data.ownedCompetencies is list && data.ownedCompetencies.size() <= 20 &&
+      (data.ownedCompetencies.size() == 0 || data.ownedCompetencies[0] is string) &&
+      data.developmentNeeds is list && data.developmentNeeds.size() <= 20 &&
+      (data.developmentNeeds.size() == 0 || data.developmentNeeds[0] is string) &&
+      isValidIdpForm(data.idpForm);
+    }
+
+    function isValidIdpItem(data, userId) {
+      return data.keys().hasAll([
+        'trainingId', 'uid', 'code', 'title', 'type', 'category',
+        'method', 'durationJp', 'level', 'targetRole', 'scheduleEstimate'
+      ]) &&
+      data.keys().hasOnly([
+        'trainingId', 'uid', 'code', 'title', 'type', 'category',
+        'method', 'durationJp', 'level', 'targetRole', 'scheduleEstimate',
+        'completed', 'completedAt', 'catalogInstanceId',
+        'assignedByAdmin', 'assignedByUid', 'assignedByName', 'assignedAt', 'addedAt'
+      ]) &&
+      data.uid == userId &&
+      data.trainingId is string && data.trainingId.size() >= 1 && data.trainingId.size() <= 64 &&
+      data.code is string && data.code.size() >= 1 && data.code.size() <= 20 &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+      data.type in ['Pelatihan', 'Sertifikasi'] &&
+      data.category is string && data.category.size() >= 1 && data.category.size() <= 100 &&
+      data.method in ['Daring', 'Luring'] &&
+      data.durationJp is number && data.durationJp > 0 && data.durationJp <= 500 &&
+      data.level in ['Dasar', 'Menengah', 'Lanjut'] &&
+      data.targetRole is string && data.targetRole.size() >= 1 && data.targetRole.size() <= 160 &&
+      data.scheduleEstimate is string && data.scheduleEstimate.size() <= 100 &&
+      (!('completed' in data) || data.completed is bool) &&
+      (!('completedAt' in data) || data.completedAt == null || (data.completedAt is string && data.completedAt.size() <= 40)) &&
+      (!('catalogInstanceId' in data) || data.catalogInstanceId == null || (data.catalogInstanceId is string && data.catalogInstanceId.size() <= 64)) &&
+      (!('assignedByAdmin' in data) || data.assignedByAdmin is bool) &&
+      (!('assignedByUid' in data) || data.assignedByUid == null || (data.assignedByUid is string && data.assignedByUid.size() <= 128)) &&
+      (!('assignedByName' in data) || data.assignedByName == null || (data.assignedByName is string && data.assignedByName.size() <= 160)) &&
+      (!('assignedAt' in data) || data.assignedAt == null || (data.assignedAt is string && data.assignedAt.size() <= 40));
+    }
+
+    // 0. Admins collection: read-only check for own admin doc or bootstrap admin; client writes blocked
+    match /admins/{adminId} {
+      allow get: if isOwner(adminId) || isAdmin();
+      allow list: if isBootstrapAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // 3. Shared training catalog: all signed-in users can read; Admin and Ahli Utama can create; Admin can approve/manage
+    match /katalog_pelatihan/{trainingId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() &&
+        isValidId(trainingId) &&
+        isValidTraining(incoming()) &&
+        ('createdByUid' in incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        ('approvalStatus' in incoming()) &&
+        (
+          (isAdmin() && incoming().approvalStatus in ['Belum Diajukan', 'Menunggu Persetujuan Admin', 'Disetujui']) ||
+          (isAhliUtama() && incoming().approvalStatus in ['Belum Diajukan', 'Menunggu Persetujuan Admin'])
+        );
+      allow update: if isSignedIn() &&
+        isValidId(trainingId) &&
+        isValidTraining(incoming()) &&
+        incoming().id == existing().id &&
+        (
+          (isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['approvalStatus', 'adminNote', 'submittedToAdminAt'])) ||
+          (('createdByUid' in existing()) &&
+            existing().createdByUid == request.auth.uid &&
+            incoming().createdByUid == existing().createdByUid &&
+            incoming().approvalStatus == 'Menunggu Persetujuan Admin' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['approvalStatus', 'adminNote', 'submittedToAdminAt']))
+        );
+      allow delete: if isSignedIn() &&
+        isValidId(trainingId) &&
+        (isAdmin() || (('createdByUid' in existing()) && existing().createdByUid == request.auth.uid));
+
+      // Subcollection tracking participants who added or were assigned this training in their IDP
+      match /peserta/{participantUid} {
+        allow get: if isOwner(participantUid) || isAdmin() ||
+          (isSignedIn() && existing().catalogCreatorUid == request.auth.uid);
+        allow list: if isAdmin() || (isSignedIn() && existing().catalogCreatorUid == request.auth.uid);
+        allow create, update: if (isOwner(participantUid) || isAdmin()) && isValidId(participantUid) &&
+          incoming().keys().hasAll(['uid', 'trainingId', 'catalogCreatorUid']) &&
+          incoming().keys().hasOnly(['uid', 'trainingId', 'catalogCreatorUid', 'addedAt']) &&
+          incoming().uid == participantUid &&
+          incoming().trainingId == trainingId &&
+          incoming().catalogCreatorUid is string && incoming().catalogCreatorUid.size() <= 128;
+        allow delete: if isOwner(participantUid) || isAdmin() ||
+          (isSignedIn() && existing().catalogCreatorUid == request.auth.uid);
+      }
+    }
+
+    // 1. Users collection: owner can read/write own document; Admin can list/read employees to assign trainings
+    match /users/{userId} {
+      allow get: if (isOwner(userId) || isAdmin()) && isValidId(userId);
+      allow list: if isAdmin() || (isSignedIn() && existing().uid == request.auth.uid);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'photoDataUrl', 'position', 'unit', 'idpForm', 'updatedAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // 2. Per-user IDP selected trainings subcollection: owner & Admin can read/assign/manage (plus creator cleanup on catalog delete)
+      match /idp_items/{itemId} {
+        allow get: if (isOwner(userId) || isAdmin()) && isValidId(itemId);
+        allow list: if isOwner(userId) || isAdmin();
+        allow create: if (isOwner(userId) || isAdmin()) && isValidId(itemId) &&
+          isValidIdpItem(incoming(), userId) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if (isOwner(userId) || isAdmin()) && isValidId(itemId) &&
+          isValidIdpItem(incoming(), userId) &&
+          incoming().uid == existing().uid &&
+          incoming().trainingId == existing().trainingId &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'completedAt']) ||
+            (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly([
+              'assignedByAdmin', 'assignedByUid', 'assignedByName', 'assignedAt',
+              'catalogInstanceId', 'code', 'title', 'type', 'category', 'method',
+              'durationJp', 'level', 'targetRole', 'scheduleEstimate'
+            ]))
+          );
+        allow delete: if ((isOwner(userId) || isAdmin()) && isValidId(itemId)) ||
+          (isSignedIn() && isValidId(itemId) &&
+            exists(/databases/$(database)/documents/katalog_pelatihan/$(itemId)) &&
+            get(/databases/$(database)/documents/katalog_pelatihan/$(itemId)).data.createdByUid == request.auth.uid);
+      }
+    }
+
+    // 2. Top-level IDP collection guard: owner-only read, add, edit, remove
+    match /idp/{idpId} {
+      allow get: if isSignedIn() && isValidId(idpId) && existing().uid == request.auth.uid;
+      allow list: if isSignedIn() && existing().uid == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(idpId) &&
+        isValidIdpItem(incoming(), request.auth.uid);
+      allow update: if isSignedIn() && isValidId(idpId) &&
+        isValidIdpItem(incoming(), request.auth.uid) &&
+        existing().uid == request.auth.uid &&
+        incoming().uid == existing().uid &&
+        incoming().trainingId == existing().trainingId &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'completedAt']);
+      allow delete: if isSignedIn() && isValidId(idpId) && existing().uid == request.auth.uid;
+    }
+  }
+}
